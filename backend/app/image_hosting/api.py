@@ -10,10 +10,10 @@ from flask_cors import cross_origin
 from flask import session, redirect, url_for, current_app, flash, Response, request, jsonify
 
 from . import image_hosting
-from ..response import Response as MyResponse
 from ..common_func import CommonFunc
 from ..login.login_funtion import User
 from ..short_url.function import set_content
+from ..response import Response as MyResponse
 from ..privilege.privilege_control import permission_required
 from ..model.image_hosting_model import image_hosting as image_hosting_table
 from ..model.upload_model import upload as upload_table
@@ -55,7 +55,7 @@ def get():
         _list = [{'id': s_['id'], 'file_name': s_['file_name'], 'shorted_link': s_['shorted_link'], 'update_time': s_['update_time'].strftime("%Y-%m-%d %H:%M:%S")} for s_ in _r]
         return rsp.success({'list': _list, 'total': _total})
     except Exception as e:
-        return rsp.failed(e)
+        return rsp.failed(e), 500
 
 
 @image_hosting.route('/save', methods=['POST'])
@@ -73,7 +73,7 @@ def save():
         image_hosting_table.create(file_name=file_name, file_path=file_path, token=token, shorted_link=shorted_link, user_id=user_id, is_valid=1, update_time=datetime.datetime.now())
         return rsp.success()
     except Exception as e:
-        return rsp.failed(e)
+        return rsp.failed(e), 500
 
 
 @image_hosting.route('/delete', methods=['POST'])

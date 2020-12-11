@@ -4,15 +4,8 @@ import hashlib
 import inspect
 
 
-class Config(object):
-    def get(self, key):
-        import configparser
-        cf = configparser.ConfigParser()
-        cf.read('../homepage.config')
-        return cf.get('config', key)
-
-
 class CommonFunc(object):
+
     def random_str(self, num):
         H = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -42,7 +35,7 @@ class CommonFunc(object):
             temp = True
             try:
                 temp = list[index][key] == value
-            except Exception as e:
+            except:
                 temp = False
             if temp:
                 result = list[index][target_key]
@@ -75,4 +68,15 @@ class CommonFunc(object):
         ccc = {}
         for b in bbb:
             ccc[b[0]] = b[1]
-        return (ccc)
+        return ccc
+
+
+def singleton(cls):
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper

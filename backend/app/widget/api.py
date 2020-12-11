@@ -6,20 +6,19 @@ from . import widget as widget_blue_print
 from flask_cors import cross_origin
 from flask import session, redirect, url_for, current_app, request, jsonify
 
-from ..response import Response
 from ..login.login_funtion import User
+from ..model.widget_model import widget_suite
+from ..response import Response as MyResponse
+from ..model.widget_model import widget as widget_table
 from ..privilege.privilege_control import permission_required
 from .widget_fuction import Widget, widget_suite_get, widget_get, widget_all, widget_suite_delete
-from ..model.widget_model import widget as widget_table
-from ..model.widget_model import widget_suite
 
-rsp = Response()
+rsp = MyResponse()
 URL_PREFIX = '/widget'
 
 
 @widget_blue_print.route('/suite/get', methods=['POST'])
 #@permission_required(URL_PREFIX + '/suite/get')
-@cross_origin()
 def widgetSuite():
     try:
         try:
@@ -34,7 +33,6 @@ def widgetSuite():
 
 @widget_blue_print.route('/get', methods=['POST'])
 #@permission_required(URL_PREFIX + '/get')
-@cross_origin()
 def widget():
     try:
         user_id = request.get_json()['user_id']
@@ -47,7 +45,6 @@ def widget():
 
 @widget_blue_print.route('/get_all', methods=['POST'])
 @permission_required(URL_PREFIX + '/get_all')
-@cross_origin()
 def widget_get_all():
     try:
         return rsp.success(widget_all())
@@ -58,7 +55,6 @@ def widget_get_all():
 
 @widget_blue_print.route('/suite/detail', methods=['POST'])
 @permission_required(URL_PREFIX + '/suite/detail')
-@cross_origin()
 def widgetSuiteDetail():
     try:
         user_id = request.get_json()['user_id']
@@ -73,7 +69,6 @@ def widgetSuiteDetail():
 
 @widget_blue_print.route('/suite/save', methods=['POST'])
 @permission_required(URL_PREFIX + '/suite/save')
-@cross_origin()
 def widgetSuiteSave():
     try:
         user_id = request.get_json()['user_id']

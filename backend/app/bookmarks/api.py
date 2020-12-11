@@ -6,21 +6,20 @@ import traceback
 import urllib.request
 from . import bookmarks
 from flask_cors import cross_origin
-from flask import render_template, session, redirect, url_for, current_app, flash, Response, request, jsonify
-from ..model.bookmarks_model import icon
-from ..model.bookmarks_model import bookmarks as bookmarks_table
-from ..login.login_funtion import User
-from ..privilege.privilege_control import permission_required
-from ..response import Response
+from flask import render_template, session, redirect, url_for, current_app, flash, request, jsonify
 
-rsp = Response()
+from ..login.login_funtion import User
+from ..response import Response as MyResponse
+from ..privilege.privilege_control import permission_required
+from ..model.bookmarks_model import bookmarks as bookmarks_table
+
+rsp = MyResponse()
 
 URL_PREFIX = '/bookmarks'
 
 
 @bookmarks.route('/get', methods=['POST'])
 #@permission_required(URL_PREFIX + '/get')
-@cross_origin()
 def userInfo():
     try:
         try:
@@ -29,8 +28,7 @@ def userInfo():
             user_id = 0
 
         bookmarks_query = bookmarks_table.select().where((bookmarks_table.user_id == user_id) & (bookmarks_table.is_valid == 1)).order_by(bookmarks_table.order).dicts()
-        result = [{'id': row['id'], 'name': row['name'], 'url': row['url'], 'icon': row['icon'], 'update_time': row['update_time']} for row in bookmarks_query]
-        return rsp.success(result)
+        return rsp.success([{'id': row['id'], 'name': row['name'], 'url': row['url'], 'icon': row['icon'], 'update_time': row['update_time']} for row in bookmarks_query])
     except Exception as e:
         traceback.print_exc()
         return rsp.failed(e), 500
@@ -38,7 +36,6 @@ def userInfo():
 
 @bookmarks.route('/bookmarksAdd', methods=['POST'])
 @permission_required(URL_PREFIX + '/bookmarksAdd')
-@cross_origin()
 def bookmarksAdd():
     try:
         user_id = request.get_json()['user_id']
@@ -55,7 +52,6 @@ def bookmarksAdd():
 
 @bookmarks.route('/bookmarksEdit', methods=['POST'])
 @permission_required(URL_PREFIX + '/bookmarksEdit')
-@cross_origin()
 def bookmarksEdit():
     try:
         user_id = request.get_json()['user_id']

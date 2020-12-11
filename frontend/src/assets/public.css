@@ -68,6 +68,14 @@
     font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, SimSun, sans-serif;
 }
 
+.better_font_style {
+    font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, SimSun, sans-serif;
+}
+
+.bold {
+    font-weight: bold;
+}
+
 .padding_right-small {
     padding-right: 8px;
 }
@@ -188,6 +196,13 @@
     margin-bottom: 0px;
 }
 
+.noPadding {
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+}
+
 .padding-right-19 {
     padding-right: 19px;
 }
@@ -225,6 +240,10 @@
     margin-top: 20px;
 }
 
+.margin_top-small {
+    margin-top: 10px;
+}
+
 .margin_bottom-medium {
     margin-bottom: 20px;
 }
@@ -235,6 +254,10 @@
 
 .margin_bottom-large {
     margin-bottom: 40px;
+}
+
+.margin_bottom-mini {
+    margin-bottom: 5px;
 }
 
 .margin_left-medium {
@@ -434,4 +457,15 @@ icon-medium::-webkit-scrollbar {
  ::-webkit-scrollbar-track {
     background: #ededed;
     border-radius: 3px;
+}
+
+.warningInfo {
+    color: #606266;
+    font-size: 15px;
+    text-align: left;
+    line-height: 35px;
+    margin-left: 10px;
+    margin-right: 20px;
+    margin-top: 0px;
+    font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, SimSun, sans-serif;
 }

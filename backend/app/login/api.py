@@ -6,14 +6,17 @@ import datetime
 import traceback
 import subprocess
 import urllib.request
+from flask_cors import cross_origin
+from flask import session, redirect, url_for, current_app, flash, request, jsonify
+
 from . import login
 from ..common_func import CommonFunc
-from flask_cors import cross_origin
-from flask import session, redirect, url_for, current_app, flash, Response, request, jsonify
 from ..model.login_model import user
 from ..privilege.api import privilegeFunction
+from ..response import Response as MyResponse
 
 cf = CommonFunc()
+rsp = MyResponse()
 pf = privilegeFunction()
 ALLOWED_TIME_SPAN = 100  # 盐过期X秒内允许修改密码，否则需要重新登录
 
@@ -60,7 +63,6 @@ def check_pass(login_name, password):
 
 
 @login.route('/userLogin', methods=['POST'])
-@cross_origin()
 def userLogin():
     '''
         用户登录逻辑：
@@ -87,7 +89,6 @@ def userLogin():
 
 
 @login.route('/userLoginSalt', methods=['POST'])
-@cross_origin()
 def userLoginSalt():
     try:
         login_name = request.get_json()['login_name']
@@ -102,15 +103,12 @@ def userLoginSalt():
         for row in user_query:
             stable_salt = row['stable_salt']
         user.update(salt=salt, salt_expire_time=(datetime.datetime.now() + datetime.timedelta(minutes=1))).where(user.login_name == login_name).execute()
-        response = {'code': 200, 'msg': '成功！', 'data': {'salt': salt, 'stable_salt': stable_salt}}
-        return jsonify(response)
+        return rsp.success({'salt': salt, 'stable_salt': stable_salt})
     except Exception as e:
-        response = {'code': 500, 'msg': e, 'data': {}}
-        return jsonify(response), 500
+        return rsp.failed(e), 500
 
 
 @login.route('/userChangePassword', methods=['POST'])
-@cross_origin()
 def userChangePassword():
     try:
         login_name = request.get_json()['login_name']
@@ -135,12 +133,10 @@ def userChangePassword():
                     response = {'code': 403, 'msg': '登录状态已过期，请返回并重新验证密码'}
         return jsonify(response)
     except Exception as e:
-        response = {'code': 500, 'msg': e, 'data': {}}
-        return jsonify(response), 500
+        return rsp.failed(e), 500
 
 
 @login.route('/userAdd', methods=['POST'])
-@cross_origin()
 def userAdd():
     try:
         login_name = request.get_json()['login_name']
@@ -155,8 +151,6 @@ def userAdd():
         else:
             user.create(
                 name=name, login_name=login_name, role_id=role_id, stable_salt=stable_salt, password=password, is_valid=1, create_time=datetime.datetime.now(), update_time=datetime.datetime.now())
-            response = {'code': 200, 'msg': '成功'}
-        return jsonify(response)
+            return rsp.success()
     except Exception as e:
-        response = {'code': 500, 'msg': e, 'data': {}}
-        return jsonify(response), 500
+        return rsp.failed(e), 500

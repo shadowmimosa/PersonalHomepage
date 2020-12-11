@@ -6,15 +6,14 @@ import traceback
 import subprocess
 
 CURRENT_RUNNING_PATH = os.path.abspath('.')
-TOMORROW = datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+TOMORROW = (datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 PYTHON_PATH = sys.executable
 INIT_SQL_PATH = CURRENT_RUNNING_PATH + '/backend/init.sql'
-FLASK_CONFIG_DEMO_PATH = CURRENT_RUNNING_PATH + '/backend/app/config_demo.py'
-FLASK_CONFIG_PATH = CURRENT_RUNNING_PATH + '/backend/app/config.py'
 CONFIG_PATH = CURRENT_RUNNING_PATH + '/backend/app/homepage.config'
 REQUIREMENTS_PATH = CURRENT_RUNNING_PATH + '/requirements.txt'
-SCHEDULE_SCRIPT_PATH = CURRENT_RUNNING_PATH + '/backend/app/script/schedule_monitor.sh'
+SCHEDULE_SCRIPT_PATH = CURRENT_RUNNING_PATH + '/backend/app/script'
 UPLOAD_FILE_PATH = CURRENT_RUNNING_PATH + '/upload/'
+BING_WALLPAPERS_PATH = CURRENT_RUNNING_PATH + '/wallpapers/'
 BYE = ['海内存知己，天涯若比邻。', '何当重相见，樽酒慰离颜。', '日暮征帆何处泊？天涯一望断人肠。', '日暮酒醒人已远，满天风雨下西楼。', '离心不异西江水，直送征帆万里行。', '劝君更尽一杯酒，西出阳关无故人。', '人情却似杨柳絮，悠扬便逐春风去。', '衰兰送客咸阳道，天若有情天亦老。']
 
 
@@ -30,10 +29,9 @@ def executeScriptsFromFile(filename, db):
     sqlFile = fd.read()
     fd.close()
     sqlCommands = sqlFile.split(';')
+    del sqlCommands[-1]
 
     for command in sqlCommands:
-        if len(command) == 0:
-            continue
         try:
             print(command)
             cursor.execute(command)
@@ -77,11 +75,19 @@ def alter(file, alter_dict):
 
 
 def msg():
+    print('\n')
     print('- 首先，在"frontend"目录下使用"npm i"安装必需前端组件，使用"npm run build"打包前端代码')
-    print('- 然后，使用python3在backend/目录下运行"run.py"（如不在此目录下运行会产生问题），此操作会启用服务并自动建表')
-    print('- 接着，停止服务后，再次运行此脚本(python3 start.py)以执行初始化SQL')
-    print('- 接着，使用crontab将%s加入定时任务，频率为每15分钟运行一次，可直接复制参数:"*/5 * * * * %s"，配置完成后，应用内配置的脚本（获取App价格脚本、推送脚本）将在明天后被驱动运行，具体可在"控制台-运行脚本-定时任务"查看' % (SCHEDULE_SCRIPT_PATH, SCHEDULE_SCRIPT_PATH))
-    print('- 最后，使用python3在backend/目录下运行"run.py"打开服务，登录50000端口试试看吧！初始化的用户名为admin，密码为123456')
+    print('- 接着，使用crontab配置定时任务脚本，频率为每5分钟运行一次，可直接复制参数:"*/5 * * * * %s"粘贴到crontab中，配置完成后，应用内配置的脚本（获取App价格脚本、推送脚本）将在明天后被驱动运行，具体可在"控制台-运行脚本-定时任务"查看' %
+          ('cd ' + SCHEDULE_SCRIPT_PATH + ' && ' + PYTHON_PATH + ' schedule_monitor.py'))
+    print('- 然后，在backend/目录下运行"python3 run.py"（如不在此目录下运行会产生问题），此操作会启用服务并自动建表')
+    print('- 接着，运行了run.py后，使用"ctrl+c"停止服务，切回到根目录，运行此初始化脚本(python3 start.py)以执行初始化SQL')
+    print('- 最后，在backend/目录下运行"python3 run.py"，登录50000端口试试看吧！初始用户名为admin，密码为123456')
+
+
+def msg2():
+    print('-' * 30)
+    print('本项目默认启动使用http协议，如果需要使用https协议，请在打开https开关（backend/app/homepage.config中配置HTTPS=True）后，将你的crt和key文件更名为\'homepage.crt\'和\'homepage.key\'后，放在/backend下')
+    print('-' * 30)
 
 
 print('当前运行路径:%s' % CURRENT_RUNNING_PATH)
@@ -91,17 +97,29 @@ print('')
 if first_excution == 'n' or first_excution == 'N':
     import pymysql
     import configparser
-    print('请选择需要执行的操作：\n    1.我现在需要做什么\n    2.执行初始化sql')
-    option = input('输入需要执行的操作数字(1或2):')
-    print('')
-    if str(option) == '1':
-        msg()
-        bye()
-    elif str(option) == '2':
-        pass
-    else:
-        print('错误的选项，请输入1或2')
-        bye()
+
+    while True:
+        print('请选择需要执行的操作：\n    1.我现在需要做什么\n    2.执行初始化sql\n    3.https相关\n    0.退出')
+        option = input('输入需要执行的操作数字(1/2/3/0):')
+        print('')
+        if str(option) == '1':
+            msg()
+        elif str(option) == '2':
+            break
+        elif str(option) == '3':
+            is_https = input('是否打开https（需要有证书）(y/n)')
+            if str(is_https) == 'y':
+                with open(CONFIG_PATH, 'a') as w:
+                    w.write('\nHTTPS = True')
+                print('\n打开成功！')
+                msg2()
+            else:
+                continue
+        elif str(option) == '0':
+            bye()
+        else:
+            print('错误的选项，请输入操作数字')
+
     first_excution = input('那么，需要执行初始化SQL吗? (y/n):')
     print('')
     if first_excution != 'y':
@@ -145,6 +163,7 @@ install(REQUIREMENTS_PATH)
 import pymysql
 import configparser
 
+print('接下来，我们将填写一些配置，所有的配置将仅保存在您的本地，如有顾虑，可以对代码进行审查')
 admin_email = input('[第1步/共8步]请输入管理员邮箱，用于接收推送邮件:')
 print(admin_email)
 print('')
@@ -160,13 +179,13 @@ print('')
 mail_sender_address = input('[第5步/共8步]请输入用于发送的邮件地址:')
 print(mail_sender_address)
 print('')
-mail_sender_password = input('[第6步/共8步]请输入发送的邮件地址的口令(非邮箱密码):')
+mail_sender_password = input('[第6步/共8步]请输入发送的邮件地址的口令(非邮箱密码，qq邮箱获取方法见：https://service.mail.qq.com/cgi-bin/help?subtype=1&id=28&no=166):')
 print(mail_sender_password)
 print('')
 mysql_password = input('[第7步/共8步]请输入本地MySQL的root账号的密码:')
 print(mysql_password)
 print('')
-domain = input('[第8步/共8步]请输入服务域名及端口(如果通过外网IP或域名访问，则填写"http://+外网IP或域名+端口"，如"http://baidu.com:666"，直接回车则使用"http://localhost:50000"):')
+domain = input('[第8步/共8步]请输入服务域名及端口(用于生成网盘的分享链接和防止csrf攻击，不填写则为默认值"http://localhost:50000"；如果你有域名或公网IP，则填写"http://+公网IP或域名+端口"，如"http://baidu.com:666"):')
 if domain == None:
     domain = "http://localhost:50000"
 print(domain)
@@ -182,25 +201,14 @@ flag = True
 try:
     print('%s开始配置' % CONFIG_PATH)
     backup(CONFIG_PATH)
-    homepage_text = '[config]\nWIDGET_ID_WEATHER = 1\nWIDGET_ID_BOOKMARKS = 2\nWIDGET_ID_APP = 3\nWIDGET_ID_GOLD = 4\nWIDGET_ID_NOTES = 5\nADMIN_EMAIL = %s\nSENDER = %s\nPASSWORD = %s\nDB_PASS=%s\nKEY = %s\nLOCATION = %s\nUPLOAD_FILE_PATH = %s\nDOMAIN_NAME = %s\n' % (
-        admin_email, mail_sender_address, mail_sender_password, mysql_password, weather_api_key, weather_default_location, UPLOAD_FILE_PATH, domain)
+    homepage_text = '[config]\nADMIN_EMAIL = %s\nSENDER = %s\nPASSWORD = %s\nDB_PASS=%s\nKEY = %s\nLOCATION = %s\nBASE_PATH = %s\nDOMAIN_NAME = %s\'' % (
+        admin_email, mail_sender_address, mail_sender_password, mysql_password, weather_api_key, weather_default_location, CURRENT_RUNNING_PATH, domain)
     with open(CONFIG_PATH, 'w') as w:
         w.write(homepage_text)
         print('%s配置成功' % CONFIG_PATH)
 except Exception as e:
     traceback.print_exc()
     print('修改%s失败！请手动确认。' % CONFIG_PATH)
-    flag = False
-
-try:
-    print('%s开始配置' % FLASK_CONFIG_PATH)
-    backup(FLASK_CONFIG_PATH)
-    print('%s使用默认配置' % FLASK_CONFIG_PATH)
-    os.system('cp %s %s' % (FLASK_CONFIG_DEMO_PATH, FLASK_CONFIG_PATH))
-    print('%s配置成功' % FLASK_CONFIG_PATH)
-except Exception as e:
-    traceback.print_exc()
-    print('修改%s失败！请手动确认。' % FLASK_CONFIG_PATH)
     flag = False
 
 try:
@@ -211,9 +219,7 @@ try:
         'my_wechat_key': admin_wechat_key,
         '/home/pi/Documents/Github/PersonalHomepage': CURRENT_RUNNING_PATH,
         'python3': PYTHON_PATH,
-        '2020-06-20 00:00:00': str(TOMORROW),
-        '2020-06-20 00:15:00': str(TOMORROW + datetime.timedelta(minutes=15)),
-        '2020-06-20 00:30:00': str(TOMORROW + datetime.timedelta(minutes=30)),
+        '2020-06-20': str(TOMORROW),
     }
     alter(INIT_SQL_PATH, alter_dict)
     print('%s配置成功' % INIT_SQL_PATH)
@@ -241,8 +247,11 @@ except Exception as e:
     flag = False
 
 if flag:
+    print('')
     print('基本操作已经全部完成了，还有几个步骤需要手动完成:')
+    print('')
     msg()
+    msg2()
 else:
     print('存在失败的操作，终止执行，请手动排查。')
     exit()

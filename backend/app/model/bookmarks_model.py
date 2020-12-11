@@ -1,16 +1,21 @@
 import os
 import peewee
-import configparser
 from peewee import CharField, IntegerField, DateTimeField
 from .model_function import BaseModel
 
 
 class icon(BaseModel):
     name = CharField()
+    category = IntegerField()
 
     class Meta:
         table_name = 'icon'
 
+class icon_category(BaseModel):
+    name = CharField()
+
+    class Meta:
+        table_name = 'icon_category'
 
 class bookmarks(BaseModel):
     name = CharField()
@@ -26,4 +31,5 @@ class bookmarks(BaseModel):
 
 
 icon.create_table()
+icon_category.create_table()
 bookmarks.create_table()

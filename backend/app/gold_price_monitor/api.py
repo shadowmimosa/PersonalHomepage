@@ -4,23 +4,22 @@ import requests
 import datetime
 import traceback
 import urllib.request
-from . import gold_price_monitor
-from flask_cors import cross_origin
-from flask import session, redirect, url_for, current_app, flash, Response, request, jsonify
-from ..model.gold_price_model import gold_price as gold_price_table
-from ..model.gold_price_model import gold_price_push_option
-from ..login.login_funtion import User
-from ..privilege.privilege_control import permission_required
-from ..response import Response
 from peewee import DoesNotExist
+from flask_cors import cross_origin
+from flask import session, redirect, url_for, current_app, flash, request, jsonify
 
-rsp = Response()
+from . import gold_price_monitor
+from ..login.login_funtion import User
+from ..response import Response as MyResponse
+from ..model.gold_price_model import gold_price_push_option
+from ..privilege.privilege_control import permission_required
+from ..model.gold_price_model import gold_price as gold_price_table
 
+rsp = MyResponse()
 URL_PREFIX = '/gold'
 
 
 @gold_price_monitor.route('/get', methods=['POST'])
-@cross_origin()
 def get():
     try:
         user_id = request.get_json()['user_id']
@@ -42,7 +41,6 @@ def get():
 
 @gold_price_monitor.route('/edit', methods=['POST'])
 @permission_required(URL_PREFIX + '/edit')
-@cross_origin()
 def edit():
     try:
         user_id = request.get_json()['user_id']

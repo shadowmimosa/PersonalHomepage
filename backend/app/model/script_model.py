@@ -1,6 +1,5 @@
 import os
 import peewee
-import configparser
 from peewee import CharField, IntegerField, DateTimeField, TextField
 from .model_function import BaseModel
 
@@ -61,6 +60,7 @@ class script_log(BaseModel):
     detail = TextField(null=True)
     output = TextField(null=True)
     version = IntegerField(null=True)
+    user_id = IntegerField()
     user = TextField(null=True)
     start_time = DateTimeField(null=True)
     end_time = DateTimeField(null=True)

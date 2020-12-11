@@ -5,18 +5,15 @@ parentUrl = os.path.abspath(os.path.join(currentUrl, os.pardir))
 sys.path.append(parentUrl)
 sys.path.append(currentUrl)
 from flask import Flask
-from config import config
 from flask_cors import CORS
-from .model.model_function import db
+from .model.model_function import BaseDb
 from playhouse.flask_utils import FlaskDB
 
 
 def create_app(config_name):
     app = Flask(__name__, static_folder="../../dist/static", template_folder="../../dist")
-    FlaskDB(app, db)  # 解决peewee不自动关闭连接池连接，参见https://www.cnblogs.com/xueweihan/p/6698456.html
+    FlaskDB(app, BaseDb().db)  # 解决peewee不自动关闭连接池连接，参见https://www.cnblogs.com/xueweihan/p/6698456.html
     CORS(app, supports_credentials=True)
-    app.config.from_object(config[config_name])
-    config[config_name].init_app(app)
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
@@ -57,15 +54,28 @@ def create_app(config_name):
     from .gold_price_monitor import gold_price_monitor as gold_price_monitor_blueprint
     app.register_blueprint(gold_price_monitor_blueprint, url_prefix='/gold')
 
-    from .notes import notes as  notes_blueprint
+    from .notes import notes as notes_blueprint
     app.register_blueprint(notes_blueprint, url_prefix='/notes')
 
-    from .short_url import short_url as  short_url_blueprint
+    from .short_url import short_url as short_url_blueprint
     app.register_blueprint(short_url_blueprint, url_prefix='/s')
 
-    from .image_hosting import image_hosting as  image_hosting_blueprint
+    from .image_hosting import image_hosting as image_hosting_blueprint
     app.register_blueprint(image_hosting_blueprint, url_prefix='/imageHosting')
 
-    from .translator import translator as  translator_blueprint
+    from .translator import translator as translator_blueprint
     app.register_blueprint(translator_blueprint, url_prefix='/translator')
+
+    from .wallpapers import wallpapers as wallpapers_blueprint
+    app.register_blueprint(wallpapers_blueprint, url_prefix='/wallpapers')
+
+    from .stock import stock as stock_blueprint
+    app.register_blueprint(stock_blueprint, url_prefix='/stock')
+
+    from .fund import fund as fund_blueprint
+    app.register_blueprint(fund_blueprint, url_prefix='/fund')
+
+    from .news import news as news_blueprint
+    app.register_blueprint(news_blueprint, url_prefix='/news')
+
     return app

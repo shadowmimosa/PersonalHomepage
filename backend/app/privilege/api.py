@@ -4,7 +4,6 @@ import redis
 import datetime
 import requests
 import traceback
-import configparser
 from . import privilege
 from functools import wraps
 from flask_cors import cross_origin
@@ -29,7 +28,6 @@ ALLOWED_TIME_SPAN = 100  # 盐过期X秒内允许修改，否则需要重新登�
 # 用户列表获取（带有用户的角色信息）
 @privilege.route('/userGet', methods=['POST'])
 @permission_required(URL_PREFIX + '/userGet')
-@cross_origin()
 def userGet():
     try:
         user_id = int(request.get_json()['user_id'])
@@ -56,7 +54,6 @@ def userGet():
 # 用户禁用
 @privilege.route('/userDisable', methods=['POST'])
 @permission_required(URL_PREFIX + '/userDisable')
-@cross_origin()
 def userDisable():
     try:
         user_id = int(request.get_json()['user_id'])
@@ -71,7 +68,6 @@ def userDisable():
 # 用户启用
 @privilege.route('/userEnable', methods=['POST'])
 @permission_required(URL_PREFIX + '/userEnable')
-@cross_origin()
 def userEnable():
     try:
         user_id = int(request.get_json()['user_id'])
@@ -85,7 +81,6 @@ def userEnable():
 # 用户信息修改
 @privilege.route('/userRoleChange', methods=['POST'])
 @permission_required(URL_PREFIX + '/userRoleChange')
-@cross_origin()
 def userRoleChange():
     try:
         login_name = request.get_json()['login_name']
@@ -109,13 +104,11 @@ def userRoleChange():
     except Exception as e:
         traceback.print_exc()
         return rsp.failed(e), 500
-        
 
 
 # 用户删除
 @privilege.route('/userDelete', methods=['POST'])
 @permission_required(URL_PREFIX + '/userDelete')
-@cross_origin()
 def userDelete():
     try:
         user_id = int(request.get_json()['user_id'])
@@ -134,7 +127,6 @@ def userDelete():
 # 角色列表获取
 @privilege.route('/roleGet', methods=['GET'])
 @permission_required(URL_PREFIX + '/roleGet')
-@cross_origin()
 def roleGet():
     try:
         return rsp.success(role_list_get())
@@ -146,7 +138,6 @@ def roleGet():
 # 角色具有的权限列表获取
 @privilege.route('/rolePrivilegeGet', methods=['POST'])
 @permission_required(URL_PREFIX + '/rolePrivilegeGet')
-@cross_origin()
 def rolePrivilegeGet():
     try:
         role_id = request.get_json()['role_id']
@@ -168,17 +159,18 @@ def rolePrivilegeGet():
 # 角色对应权限修改
 @privilege.route('/rolePrivilegeEdit', methods=['POST'])
 @permission_required(URL_PREFIX + '/rolePrivilegeEdit')
-@cross_origin()
 def rolePrivilegeEdit():
     try:
         role_id = request.get_json()['role_id']
         checked_privilege_id = request.get_json()['checked_privilege_id']
         privilege_role.update(is_valid=0).where(privilege_role.role_id == role_id).execute()
+
         data_source = []
         for single_checked_privilege_id in checked_privilege_id:
             data_source.append((single_checked_privilege_id, role_id, 1))
         field = [privilege_role.privilege_id, privilege_role.role_id, privilege_role.is_valid]
         privilege_role.insert_many(data_source, field).execute()
+
         pf.flush_role_privilege_to_redis(role_id)
         return rsp.success()
     except Exception as e:
@@ -188,7 +180,6 @@ def rolePrivilegeEdit():
 # 角色新增和修改
 @privilege.route('/roleEdit', methods=['POST'])
 @permission_required(URL_PREFIX + '/roleEdit')
-@cross_origin()
 def roleEdit():
     try:
         role_id = request.get_json()['role_id']
@@ -207,7 +198,6 @@ def roleEdit():
 # 角色禁用
 @privilege.route('/roleDisable', methods=['POST'])
 @permission_required(URL_PREFIX + '/roleDisable')
-@cross_origin()
 def roleDisable():
     try:
         role_id = request.get_json()['role_id']
@@ -222,7 +212,6 @@ def roleDisable():
 # 角色启用
 @privilege.route('/roleEnable', methods=['POST'])
 @permission_required(URL_PREFIX + '/roleEnable')
-@cross_origin()
 def roleEnable():
     try:
         role_id = request.get_json()['role_id']
@@ -237,7 +226,6 @@ def roleEnable():
 # 角色删除
 @privilege.route('/roleDelete', methods=['POST'])
 @permission_required(URL_PREFIX + '/roleDelete')
-@cross_origin()
 def roleDelete():
     try:
         role_id = request.get_json()['role_id']
@@ -256,7 +244,6 @@ def roleDelete():
 #权限列表获取
 @privilege.route('/privilegeGet', methods=['GET'])
 @permission_required(URL_PREFIX + '/privilegeGet')
-@cross_origin()
 def privilegeGet():
     try:
         _ = privilege_list_get()
@@ -270,7 +257,6 @@ def privilegeGet():
 #权限新增和修改
 @privilege.route('/privilegeEdit', methods=['POST'])
 @permission_required(URL_PREFIX + '/privilegeEdit')
-@cross_origin()
 def privilegeEdit():
     try:
         privilege_id = request.get_json()['privilege_id']
@@ -295,7 +281,6 @@ def privilegeEdit():
 # 权限禁用
 @privilege.route('/privilegeDisable', methods=['POST'])
 @permission_required(URL_PREFIX + '/privilegeDisable')
-@cross_origin()
 def privilegeDisable():
     try:
         privilege_id = request.get_json()['privilege_id']
@@ -310,7 +295,6 @@ def privilegeDisable():
 # 权限启用
 @privilege.route('/privilegeEnable', methods=['POST'])
 @permission_required(URL_PREFIX + '/privilegeEnable')
-@cross_origin()
 def privilegeEnable():
     try:
         privilege_id = request.get_json()['privilege_id']
@@ -325,13 +309,13 @@ def privilegeEnable():
 # 权限删除
 @privilege.route('/privilegeDelete', methods=['POST'])
 @permission_required(URL_PREFIX + '/privilegeDelete')
-@cross_origin()
 def privilegeDelete():
     try:
         privilege_id = request.get_json()['privilege_id']
         privilege_status = privilege_model.get(privilege_model.id == privilege_id).is_valid
         if privilege_status == 0:
             privilege_model.update(is_valid=-1, update_time=datetime.datetime.now()).where(privilege_model.id == privilege_id).execute()
+            privilege_role.update(is_valid=-1, update_time=datetime.datetime.now()).where(privilege_role.privilege_id == privilege_id).execute()
             pf.flush_privilege_which_belongs_to_role_with_target_privilege_to_redis(privilege_id)
             return rsp.success()
         else:

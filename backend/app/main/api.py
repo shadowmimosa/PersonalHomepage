@@ -1,34 +1,109 @@
 import re
 import os
 import time
+import random
 import requests
 import datetime
 import traceback
 import threading
+import configparser
 from peewee import DoesNotExist
 from pypinyin import lazy_pinyin
-from werkzeug.utils import secure_filename
-
-from flask import render_template, session, redirect, url_for, current_app, request, jsonify, Response, send_file, make_response
-from . import main
 from flask_cors import cross_origin
-from ..model.search_model import search_engines, search_engines_log
-from ..model.bookmarks_model import bookmarks as bookmarks_table
+from werkzeug.utils import secure_filename
+from flask import render_template, session, redirect, url_for, current_app, request, jsonify, Response, send_file, make_response
+
+from ..model.bookmarks_model import icon_category
 from ..model.bookmarks_model import icon as icon_table
 from ..model.widget_model import widget as widget_table
+from ..model.bookmarks_model import bookmarks as bookmarks_table
+from ..model.search_model import search_engines, search_engines_log
 from ..model.upload_model import upload as upload_table, cloud_drive
+
+from . import main
 from ..login.login_funtion import User
+from ..response import Response as MyResponse
 from ..privilege.privilege_control import privilegeFunction
 from ..privilege.privilege_control import permission_required
-import configparser
-from ..response import Response as MyResponse
 
 rsp = MyResponse()
 cf = configparser.ConfigParser()
 cf.read('app/homepage.config')
 FRONTEND_FOLDER = 'frontend/'
-UPLOAD_FILE_PATH = cf.get('config', 'UPLOAD_FILE_PATH')
+UPLOAD_FILE_PATH = cf.get('config', 'BASE_PATH') + 'upload/'
 URL_PREFIX = ''
+
+DICT_DISORDER = {
+    0: 'B',
+    1: 'H',
+    2: 'q',
+    3: 'D',
+    4: 'b',
+    5: 'j',
+    6: 'Q',
+    7: 'z',
+    8: '6',
+    9: 'x',
+    10: 'L',
+    11: 'R',
+    12: 'P',
+    13: 'Z',
+    14: 'n',
+    15: 'v',
+    16: 'e',
+    17: '9',
+    18: 'M',
+    19: '3',
+    20: 'W',
+    21: '5',
+    22: 'G',
+    23: 'V',
+    24: 'r',
+    25: 'h',
+    26: 'k',
+    27: 'c',
+    28: 'E',
+    29: 'g',
+    30: 'C',
+    31: 'd',
+    32: 'T',
+    33: '7',
+    34: 'K',
+    35: 'm',
+    36: 'i',
+    37: 'S',
+    38: 'f',
+    39: 'J',
+    40: 'U',
+    41: 'Y',
+    42: 'F',
+    43: 'u',
+    44: '1',
+    45: '4',
+    46: 'y',
+    47: 'o',
+    48: 'w',
+    49: '2',
+    50: 'a',
+    51: '8',
+    52: 'A',
+    53: 'p',
+    54: 'N',
+    55: 's',
+    56: 't',
+    57: 'X'
+}
+
+
+def base_58(target: int):
+    # 接受一个整数，返回不会重复的较短的字符串
+    r = ''
+    target = int(str(target) + str(time.time()).split('.')[0][-6:])
+    while target > 58:
+        r += str(DICT_DISORDER[target % 58])
+        target = target // 58
+    r += str(DICT_DISORDER[target])
+    return r[::-1]
 
 
 @main.route('/')
@@ -47,13 +122,12 @@ def userInfo():
         except:
             user_id = 0
             user_name = ''
-
-        response = {'code': 200, 'msg': '成功！', 'data': {'user_id': user_id, 'user_name': user_name}}
-        return jsonify(response)
+        random_int = random.randint(10000000000000000, 100000000000000000)
+        csrf_token = base_58(random_int) + str(random_int)
+        return rsp.success({'user_id': user_id, 'user_name': user_name, 'csrf_token': csrf_token})
     except Exception as e:
         traceback.print_exc()
-        response = {'code': 500, 'msg': '失败！错误信息：' + str(e) + '，请联系管理员。', 'data': []}
-        return jsonify(response), 500
+        return rsp.failed(e), 500
 
 
 @main.route('/favicon.ico', methods=['GET'])
@@ -69,13 +143,19 @@ def icon():
     try:
         result = []
         icon_query = icon_table.select().dicts()
-        for row in icon_query:
-            result.append({'id': row['id'], 'name': row['name']})
-        response = {'code': 200, 'msg': '成功！', 'data': result}
-        return jsonify(response)
+        return rsp.success([{'id': row['id'], 'name': row['name'], 'category': row['category']} for row in icon_query])
     except Exception as e:
-        response = {'code': 500, 'msg': '失败！错误信息：' + str(e) + '，请联系管理员。', 'data': []}
-        return jsonify(response), 500
+        return rsp.failed(e), 500
+
+
+@main.route('/iconCategory', methods=['GET'])
+def iconCategory():
+    try:
+        icon_query = icon_category.select().dicts()
+        result = []
+        return rsp.success([{'id': row['id'], 'name': row['name']} for row in icon_query])
+    except Exception as e:
+        return rsp.failed(e), 500
 
 
 @main.route('/upload', methods=['POST'])
@@ -96,8 +176,7 @@ def upload():
     fsize = str(round(float(int(os.path.getsize(upload_path)) / 1000000), 2)) + 'MB'
     _ = upload_table(file_name=f.filename, file_path=upload_path, size=fsize, user_id=user_id, update_time=datetime.datetime.now())
     _.save()
-    response = {'code': 200, 'msg': '成功！', 'data': {'id': _.id, 'name': f.filename}}
-    return jsonify(response)
+    return rsp.success({'id': _.id, 'name': f.filename})
 
 
 @main.route('/download', methods=['GET'])
@@ -160,9 +239,7 @@ def gitHook():
                 break
         thread = threading.Thread(target=pull) if pull else thread
         thread.start()
-        response = {'code': 200, 'msg': 'pulling codes' if pull else 'pulling and building codes'}
-        return jsonify(response)
+        return rsp.success('pulling codes' if pull else 'pulling and building codes')
     except Exception as e:
         print(e)
-        response = {'code': 500, 'msg': 'success', 'data': str(e)}
-        return jsonify(response)
+        return rsp.failed(e), 500
